@@ -7,8 +7,8 @@ app.use(cors());
 app.use(express.json());
 
 /* ================= DATABASE ================= */
-mongoose.connect("mongodb://127.0.0.1:27017/smartcampus")
-  .then(() => console.log("MongoDB Connected"))
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB Atlas Connected"))
   .catch(err => console.log(err));
 
 /* ================= SCHEMAS ================= */
@@ -38,15 +38,13 @@ app.post("/login", (req, res) => {
 
   if (username === "admin" && password === "1234")
     res.json({ success: true, role: "admin" });
-
   else if (username === "student" && password === "1234")
     res.json({ success: true, role: "student" });
-
   else
     res.json({ success: false });
 });
 
-/* ================= STUDENTS CRUD ================= */
+/* ================= STUDENTS ================= */
 app.post("/students", async (req, res) => {
   const student = new Student(req.body);
   await student.save();
@@ -54,42 +52,56 @@ app.post("/students", async (req, res) => {
 });
 
 app.get("/students", async (req, res) => {
-  const students = await Student.find();
-  res.json(students);
+  res.json(await Student.find());
 });
 
 app.put("/students/:id", async (req, res) => {
   await Student.findByIdAndUpdate(req.params.id, req.body);
-  res.json({ message: "Student Updated" });
+  res.json({ message: "Updated" });
 });
 
 app.delete("/students/:id", async (req, res) => {
   await Student.findByIdAndDelete(req.params.id);
-  res.json({ message: "Student Deleted" });
+  res.json({ message: "Deleted" });
 });
 
 /* ================= ATTENDANCE ================= */
 app.post("/attendance", async (req, res) => {
-  const record = new Attendance(req.body);
-  await record.save();
-  res.json({ message: "Attendance Saved" });
+  await new Attendance(req.body).save();
+  res.json({ message: "Saved" });
 });
 
 app.get("/attendance", async (req, res) => {
-  const records = await Attendance.find();
-  res.json(records);
+  res.json(await Attendance.find());
 });
 
 /* ================= NOTICES ================= */
 app.get("/notices", async (req, res) => {
-  const notices = await Notice.find();
-  res.json(notices);
+  res.json(await Notice.find());
 });
 
 /* ================= TIMETABLE ================= */
 app.get("/timetable", async (req, res) => {
-  const data = await Timetable.find();
-  res.json(data);
+  res.json(await Timetable.find());
+});
+
+/* ================= SEED DATA (RUN ONCE) ================= */
+app.get("/seed", async (req, res) => {
+  await Notice.insertMany([
+    { text: "Mid exams start Monday" },
+    { text: "Campus closed on Friday" },
+    { text: "Project submission deadline next week" }
+  ]);
+
+  await Timetable.insertMany([
+    { day: "Monday", subject: "Maths", time: "9:00 AM" },
+    { day: "Tuesday", subject: "Physics", time: "10:00 AM" },
+    { day: "Wednesday", subject: "Chemistry", time: "11:00 AM" },
+    { day: "Thursday", subject: "English", time: "12:00 PM" },
+    { day: "Friday", subject: "Computer Science", time: "1:00 PM" }
+  ]);
+
+  res.send("Database Seeded");
 });
 
 /* ================= SERVER ================= */
